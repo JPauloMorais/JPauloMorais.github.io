@@ -1,0 +1,81 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>HB Test</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="manifest" href="site.webmanifest">
+        <link rel="apple-touch-icon" href="icon.png">
+        <!-- Place favicon.ico in the root directory -->
+        <!-- <link rel="stylesheet" href="css/main.css"> -->
+		<style>
+			html, body {
+				margin: 0;
+				padding: 0;
+				border: 0;
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+			}
+		</style>
+    </head>
+    <body>
+    	<canvas id="canvas"></canvas>>
+        <script>
+
+			var canvas_width = window.innerWidth;
+			var canvas_height = window.innerHeight;
+
+			var background = new Image();
+			background.src = "background.jpg";
+			var character = new Image();
+			character.src = "character.png";
+
+			var character_frame_rows = 4;
+			var character_frame_cols = 4;
+			var character_frame_width = character.width/character_frame_cols;
+			var character_frame_height = character.width/character_frame_rows;
+			var character_frame = 0;
+			var character_frame_x = 0;
+			var character_frame_y = 0;
+
+			var canvas = document.getElementById('canvas');
+			canvas.width = canvas_width;
+			canvas.height = canvas_height;
+			var ctx = canvas.getContext('2d');
+
+
+			function update()
+			{
+				character_frame_width = character.width/character_frame_cols;
+				character_frame_height = character.width/character_frame_rows;
+
+				character_frame = (character_frame+1)%character_frame_cols;
+
+				character_frame_x = character_frame * character_frame_width;
+				character_frame_y = 0;
+			}
+
+			function draw()
+			{
+				update();
+
+				ctx.beginPath();
+				ctx.rect(0,0,canvas_width,canvas_height);
+				ctx.fillStyle = "#ffaaff";
+				ctx.fill();
+
+				ctx.drawImage(character, 
+							  character_frame_x,character_frame_y,character_frame_width,character_frame_height,
+							  0,0,character_frame_width,character_frame_height);
+			}
+
+			setInterval(function(){
+				draw();
+			}, 1000/24);
+
+        </script>
+    </body>
+</html>
