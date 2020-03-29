@@ -3,7 +3,13 @@ var config = {
     width: 800,
     height: 600,
     physics: {
-        default: 'matter'
+        default: 'matter',
+        matter: {
+        	gravity: {
+                x: 0,
+                y: 0
+            }
+        }
     },
     scene: {
         preload: preload,
@@ -14,10 +20,9 @@ var config = {
 
 var game = new Phaser.Game(config);
 
-var anim;
-var sprite;
-var progress;
-var frameView;
+var player;
+var cursors;
+var last_direction;
 
 function preload ()
 {
@@ -64,6 +69,7 @@ function spriteFromAsepriteAtlas(atlasTexture, objectFactory, animationManager)
 
 function create ()
 {
+	this.matter.world.setBounds(0, 0, 800, 600);
 	// var anim_config = 
 	// {
 	// 	key: 'walk_d', 
@@ -77,31 +83,89 @@ function create ()
 	// var sprite = this.add.sprite(400, 300, 'male');
 	// sprite.anims.load('walk_d');
 	// sprite.anims.play('walk_d');
-	var sprite = spriteFromAsepriteAtlas(this.textures.get('male'), this.add, this.anims);
-	sprite.setPosition(400,300);
+	player = spriteFromAsepriteAtlas(this.textures.get('male'), this.matter.add, this.anims);
+	player.anims.play('idle_d', true);
+	player.setPosition(400,300);
+	player.setFixedRotation();
+    player.setAngle(0);
+    player.setFrictionAir(0.05);
+    player.setMass(10);
+    last_direction = new Phaser.Math.Vector2(0,0); 
+	// player.setCollideWorldBounds(true);
 	// sprite.anims.play('walk_u');
-	this.input.keyboard.on('keydown_RIGHT', function (event) 
-	{
-        sprite.anims.play('walk_s', true);
-        sprite.setFlipX(true);
-    });
-    this.input.keyboard.on('keydown_LEFT', function (event) 
-	{
-        sprite.anims.play('walk_s', true);
-        sprite.setFlipX(false);
-    });   
-    this.input.keyboard.on('keydown_UP', function (event) 
-	{
-        sprite.anims.play('walk_u', true);
-        sprite.setFlipX(false);
-    });
-    this.input.keyboard.on('keydown_DOWN', function (event) 
-	{
-        sprite.anims.play('walk_d', true);
-        sprite.setFlipX(false);
-    });
+
+    cursors = this.input.keyboard.createCursorKeys();
 }
 
 function update ()
 {
+	let direction = new Phaser.Math.Vector2(0,0);
+	let speed = 5;
+	
+	if(cursors.up.isDown)
+		direction.add(new Phaser.Math.Vector2(0,-1));
+	if(cursors.down.isDown)
+		direction.add(new Phaser.Math.Vector2(0,+1));
+	if(cursors.left.isDown)
+		direction.add(new Phaser.Math.Vector2(-1,0));
+	if(cursors.right.isDown)
+		direction.add(new Phaser.Math.Vector2(+1,0));
+	direction.normalize();
+
+	if(direction.equals(new Phaser.Math.Vector2( 0,-1)) ||
+	   direction.equals(new Phaser.Math.Vector2(-1,-1).normalize()) ||
+	   direction.equals(new Phaser.Math.Vector2(+1,-1).normalize()))
+	{
+		player.anims.play('walk_u', true);
+		player.setFlipX(false);
+	}
+	else if(direction.equals(new Phaser.Math.Vector2( 0,+1)) ||
+			direction.equals(new Phaser.Math.Vector2(-1,+1).normalize()) ||
+	   		direction.equals(new Phaser.Math.Vector2(+1,+1).normalize()))
+	{
+		player.anims.play('walk_d', true);
+		player.setFlipX(false);
+	}
+	else if(direction.equals(new Phaser.Math.Vector2(-1,0)))
+	{
+		player.anims.play('walk_s', true);
+		player.setFlipX(false);
+	}
+	else if(direction.equals(new Phaser.Math.Vector2(+1,0)))
+	{
+		player.anims.play('walk_s', true);
+		player.setFlipX(true);
+	}
+	else
+	{
+		if(last_direction.equals(new Phaser.Math.Vector2( 0,-1)) ||
+		   last_direction.equals(new Phaser.Math.Vector2(-1,-1).normalize()) ||
+		   last_direction.equals(new Phaser.Math.Vector2(+1,-1).normalize()))
+		{
+			player.anims.play('idle_u', true);
+			player.setFlipX(false);
+		}
+		else if(last_direction.equals(new Phaser.Math.Vector2( 0,+1)) ||
+				last_direction.equals(new Phaser.Math.Vector2(-1,+1).normalize()) ||
+		   		last_direction.equals(new Phaser.Math.Vector2(+1,+1).normalize()))
+		{
+			player.anims.play('idle_d', true);
+			player.setFlipX(false);
+		}
+		else if(last_direction.equals(new Phaser.Math.Vector2(-1,0)))
+		{
+			player.anims.play('idle_s', true);
+			player.setFlipX(false);
+		}
+		else if(last_direction.equals(new Phaser.Math.Vector2(+1,0)))
+		{
+			player.anims.play('idle_s', true);
+			player.setFlipX(true);
+		}
+	}
+
+	player.setVelocityX(direction.x * speed);
+	player.setVelocityY(direction.y * speed);
+
+	last_direction = direction;
 }
