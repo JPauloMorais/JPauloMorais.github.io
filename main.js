@@ -1,7 +1,35 @@
+
+// var isCtrlHold = false;
+// var isShiftHold = false;
+
+// $(document).keyup(function (e) {
+//     if (e.which == 17) //17 is the code of Ctrl button
+//         isCtrlHold = false;
+//     if (e.which == 16) //16 is the code of Shift button
+//         isShiftHold = false;
+// });
+// $(document).keydown(function (e) {
+//     if (e.which == 17)
+//         isCtrlHold = true;
+//     if (e.which == 16)
+//         isShiftHold = true;
+    
+//     ShortcutManager(e);
+// });
+
+// function ShortcutManager(e)
+// {   
+//     if (isCtrlHold || isShiftHold) 
+//     {
+//         e.preventDefault(); //prevent browser from the default behavior
+//     }
+// }
+
 var config = {
     type: Phaser.WEBGL,
-    width: 800,
-    height: 600,
+    width: 1155,
+    height: 650,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
     physics: {
         default: 'matter',
         matter: {
@@ -21,7 +49,7 @@ var config = {
 var game = new Phaser.Game(config);
 
 var player;
-var cursors;
+var keys;
 var last_direction;
 
 function preload ()
@@ -69,7 +97,7 @@ function spriteFromAsepriteAtlas(atlasTexture, objectFactory, animationManager)
 
 function create ()
 {
-	this.matter.world.setBounds(0, 0, 800, 600);
+	// this.matter.world.setBounds(0, 0, 800, 600);
 	// var anim_config = 
 	// {
 	// 	key: 'walk_d', 
@@ -94,21 +122,42 @@ function create ()
 	// player.setCollideWorldBounds(true);
 	// sprite.anims.play('walk_u');
 
-    cursors = this.input.keyboard.createCursorKeys();
+    // cursors = this.input.keyboard.createCursorKeys();
+    keys = 
+    {
+    	up: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP),
+    	left: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
+    	down: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN),
+    	right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
+    	run: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT),
+    	crouch: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.CTRL)
+    };
 }
 
 function update ()
 {
-	let direction = new Phaser.Math.Vector2(0,0);
-	let speed = 5;
+	let speed = 0;
+	if(keys.run.isDown)
+	{
+		speed = 7;
+	}
+	else if(keys.crouch.isDown)
+	{
+		speed = 2;
+	}
+	else
+	{
+		speed = 4;
+	}
 	
-	if(cursors.up.isDown)
+	let direction = new Phaser.Math.Vector2(0,0);
+	if(keys.up.isDown)
 		direction.add(new Phaser.Math.Vector2(0,-1));
-	if(cursors.down.isDown)
+	if(keys.down.isDown)
 		direction.add(new Phaser.Math.Vector2(0,+1));
-	if(cursors.left.isDown)
+	if(keys.left.isDown)
 		direction.add(new Phaser.Math.Vector2(-1,0));
-	if(cursors.right.isDown)
+	if(keys.right.isDown)
 		direction.add(new Phaser.Math.Vector2(+1,0));
 	direction.normalize();
 
@@ -116,24 +165,44 @@ function update ()
 	   direction.equals(new Phaser.Math.Vector2(-1,-1).normalize()) ||
 	   direction.equals(new Phaser.Math.Vector2(+1,-1).normalize()))
 	{
-		player.anims.play('walk_u', true);
+		if(keys.run.isDown)
+			player.anims.play('run_u', true);
+		else if(keys.crouch.isDown)
+			player.anims.play('crawl_u', true);
+		else
+			player.anims.play('walk_u', true);
 		player.setFlipX(false);
 	}
 	else if(direction.equals(new Phaser.Math.Vector2( 0,+1)) ||
 			direction.equals(new Phaser.Math.Vector2(-1,+1).normalize()) ||
 	   		direction.equals(new Phaser.Math.Vector2(+1,+1).normalize()))
 	{
-		player.anims.play('walk_d', true);
+		if(keys.run.isDown)
+			player.anims.play('run_d', true);
+		else if(keys.crouch.isDown)
+			player.anims.play('crawl_d', true);
+		else
+			player.anims.play('walk_d', true);
 		player.setFlipX(false);
 	}
 	else if(direction.equals(new Phaser.Math.Vector2(-1,0)))
 	{
-		player.anims.play('walk_s', true);
+		if(keys.run.isDown)
+			player.anims.play('run_s', true);
+		else if(keys.crouch.isDown)
+			player.anims.play('crawl_s', true);
+		else
+			player.anims.play('walk_s', true);
 		player.setFlipX(false);
 	}
 	else if(direction.equals(new Phaser.Math.Vector2(+1,0)))
 	{
-		player.anims.play('walk_s', true);
+		if(keys.run.isDown)
+			player.anims.play('run_s', true);
+		else if(keys.crouch.isDown)
+			player.anims.play('crawl_s', true);
+		else
+			player.anims.play('walk_s', true);
 		player.setFlipX(true);
 	}
 	else
