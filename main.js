@@ -25,14 +25,17 @@
 //     }
 // }
 
+var windowWidth = 1155;
+var windowHeight = 650;
 var config = {
     type: Phaser.WEBGL,
-    width: 1155,
-    height: 650,
+    width: windowWidth,
+    height: windowHeight,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     physics: {
         default: 'matter',
         matter: {
+        	debug: true,
         	gravity: {
                 x: 0,
                 y: 0
@@ -48,20 +51,31 @@ var config = {
 
 var game = new Phaser.Game(config);
 
+var scene;
 var player;
+var clone;
 var keys;
 var last_direction;
+var map;
 
 function preload ()
 {
     this.load.atlas('male', './assets/male.png', './assets/male.json');
     // this.load.image('male', './assets/male.png');
     // this.load.json('male', './assets/male.json');
+    this.load.image('tileset', 'assets/tileset.png');
+    this.load.tilemapTiledJSON('map', './assets/tilemap.json');
 }
 
-function spriteFromAsepriteAtlas(atlasTexture, objectFactory, animationManager)
+function spriteFromAsepriteAtlas(atlasTexture)
 {
-	var sprite = objectFactory.sprite(0,0,atlasTexture.key);
+	var body_config = 
+	{
+		label: atlasTexture.key+'_body',
+		vertices: [{x:-13,y:(45)},{x:+13,y:(45)},{x:+13,y:(50)},{x:-13,y:(50)}]
+		// position: {x:0,y:42}
+	};
+	var sprite = scene.matter.add.sprite(0,0,atlasTexture.key, null, body_config);
 
 	let frameTags = atlasTexture.customData.meta.frameTags;
 	for(tagIndex in frameTags)
@@ -87,7 +101,7 @@ function spriteFromAsepriteAtlas(atlasTexture, objectFactory, animationManager)
 			yoyo: ((tag.direction=='pingpong') ? true : false),
 			repeat: -1
 		};
-		animationManager.create(config);
+		scene.anims.create(config);
 
 		sprite.anims.load(tag.name);
 	}
@@ -97,6 +111,7 @@ function spriteFromAsepriteAtlas(atlasTexture, objectFactory, animationManager)
 
 function create ()
 {
+	scene = this;
 	// this.matter.world.setBounds(0, 0, 800, 600);
 	// var anim_config = 
 	// {
@@ -111,16 +126,22 @@ function create ()
 	// var sprite = this.add.sprite(400, 300, 'male');
 	// sprite.anims.load('walk_d');
 	// sprite.anims.play('walk_d');
-	player = spriteFromAsepriteAtlas(this.textures.get('male'), this.matter.add, this.anims);
+	player = spriteFromAsepriteAtlas(this.textures.get('male'));
 	player.anims.play('idle_d', true);
 	player.setPosition(400,300);
+	player.setOrigin(0.5,0.9);
 	player.setFixedRotation();
     player.setAngle(0);
     player.setFrictionAir(0.05);
     player.setMass(10);
+    player.setActive(true);
     last_direction = new Phaser.Math.Vector2(0,0); 
 	// player.setCollideWorldBounds(true);
 	// sprite.anims.play('walk_u');
+
+	clone = spriteFromAsepriteAtlas(this.textures.get('male'));
+	clone.setPosition(400,400);
+	clone.setActive(true);
 
     // cursors = this.input.keyboard.createCursorKeys();
     keys = 
@@ -132,6 +153,13 @@ function create ()
     	run: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT),
     	crouch: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.CTRL)
     };
+
+	map = this.make.tilemap({ key: 'map' });
+    var tileset = map.addTilesetImage('tileset', 'tileset');
+    let mapX = (windowWidth/2) - (map.widthInPixels/2);
+    let mapY = (windowHeight/2) - (map.heightInPixels/2);
+    map.createDynamicLayer('ground', tileset, mapX, mapY).setVisible(true);
+    map.createDynamicLayer('ground2', tileset, mapX, mapY).setVisible(true);
 }
 
 function update ()
@@ -233,8 +261,14 @@ function update ()
 		}
 	}
 
-	player.setVelocityX(direction.x * speed);
-	player.setVelocityY(direction.y * speed);
+	player.setVelocity(direction.x * speed, direction.y * speed);
+
+	let player_z = player.y + (player.height * player.originY);
+	let clone_z = clone.y + (clone.height * clone.originY);
+	player.setZ(clone_z);
+	player.setDepth(clone_z);
+	clone.setZ(player_z);
+	clone.setDepth(player_z);
 
 	last_direction = direction;
 }
