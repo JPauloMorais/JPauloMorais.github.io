@@ -39,7 +39,7 @@ var config = {
     physics: {
         default: 'matter',
         matter: {
-        	// debug: true,
+        	debug: true,
         	gravity: {
                 x: 0,
                 y: 0
@@ -114,6 +114,64 @@ function spriteFromAsepriteAtlas(atlasTexture)
 	return sprite;
 }
 
+function setupLayerColliders(tileset, map, layer)
+{
+    map.setCollisionByExclusion([-1,0],true,true,layer);
+    var graphics = scene.add.graphics();
+    layer.forEachTile(function (tile) 
+    {
+        var tileWorldPos = layer.tileToWorldXY(tile.x, tile.y);
+        var collisionGroup = tileset.getTileCollisionGroup(tile.index);
+
+        if (!collisionGroup || collisionGroup.objects.length === 0) { return; }
+
+		graphics.lineStyle(1, 0xff5555, 1);
+
+		var objects = collisionGroup.objects;
+
+        for (var i = 0; i < objects.length; i++)
+        {
+            var object = objects[i];
+            var objectX = tileWorldPos.x + object.x;
+            var objectY = tileWorldPos.y + object.y;
+
+            // When objects are parsed by Phaser, they will be guaranteed to have one of the
+            // following properties if they are a rectangle/ellipse/polygon/polyline.
+            if (object.rectangle)
+            {
+                // graphics.strokeRect(objectX, objectY, object.width, object.height);
+                scene.matter.add.rectangle(objectX, objectY, object.width, object.height, {isStatic:true});
+            }
+            else if (object.ellipse)
+            {
+                // Ellipses in Tiled have a top-left origin, while ellipses in Phaser have a center
+                // origin
+                // graphics.strokeEllipse(
+                //     objectX + object.width / 2, objectY + object.height / 2,
+                //     object.width, object.height
+                // );
+            }
+            else if (object.polygon || object.polyline)
+            {
+                var originalPoints = object.polygon ? object.polygon : object.polyline;
+                // let vertices = scene.matter.vertices.create(originalPoints);
+                let center = scene.matter.vertices.centre(originalPoints);
+                // var points = [];
+                // for (var j = 0; j < originalPoints.length; j++)
+                // {
+                //     var point = originalPoints[j];
+                //     points.push({
+                //         x: objectX + point.x,
+                //         y: objectY + point.y
+                //     });
+                // }
+                // graphics.strokePoints(points);
+                scene.matter.add.fromVertices(objectX+center.x, objectY+center.y, originalPoints, {isStatic:true});
+            }
+        }
+    });
+}
+
 function create ()
 {
 	scene = this;
@@ -134,16 +192,32 @@ function create ()
 
 	// renderTexture = this.add.renderTexture(0, 0, windowWidth, windowHeight);
 	
+	this.matter.set60Hz();
+
 	map = this.make.tilemap({ key: 'map' });
     var tileset = map.addTilesetImage('tileset_inside', 'tileset');
     let mapX = 0;//(windowWidth/2) - (map.widthInPixels/2);
     let mapY = 0;//(windowHeight/2) - (map.heightInPixels/2);
-    map.createDynamicLayer('ground', tileset, mapX, mapY).setVisible(true);
-    map.createDynamicLayer('walls', tileset, mapX, mapY).setVisible(true);
+    let ground = map.createDynamicLayer('ground', tileset, mapX, mapY).setDepth(0).setVisible(true);
+    let walls = map.createDynamicLayer('walls', tileset, mapX, mapY).setDepth(2).setVisible(true);
+    // map.setCollisionByExclusion([-1,0],true,true,ground);
+    // this.matter.world.convertTilemapLayer(ground);
+    // map.setCollisionByExclusion([-1,0],true,true,walls);
+    // this.matter.world.convertTilemapLayer(walls);
+    this.matter.world.setBounds(map.widthInPixels, map.heightInPixels);
+
+	setupLayerColliders(tileset, map, ground);
+	setupLayerColliders(tileset, map, walls);
+
+    let bodyCount = this.matter.world.getAllBodies().length;
+
+    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     
 	player = spriteFromAsepriteAtlas(this.textures.get('prepper'));
 	player.anims.play('idle', true);
-	player.setPosition(400,300);
+	player.setPosition(windowWidth/2,windowHeight/2);
+    player.setRectangle(5,2);
+	player.setOrigin(0.5,0.9);
 	for(objectLayerIndex in map.objects)
 	{
 		for(objectIndex in map.objects[objectLayerIndex].objects)
@@ -156,12 +230,11 @@ function create ()
 		}	
 	}
 	// player.setScale(4);
-	player.setOrigin(0.5,0.9);
 	player.setFixedRotation();
     player.setAngle(0);
     player.setFrictionAir(0.05);
     player.setMass(10);
-    player.setActive(true);
+    player.setDepth(1);
     last_direction = new Phaser.Math.Vector2(0,0); 
 	// player.setCollideWorldBounds(true);
 	// sprite.anims.play('walk_u');
@@ -170,6 +243,42 @@ function create ()
 	// // clone.anims.play('idle', true);
 	// clone.setPosition(400,400);
 	// clone.setActive(true);
+	// 
+	
+	    // Loop over the active colliding pairs and count the surfaces the player is touching.
+    this.matter.world.on('collisionstart', function (event) 
+    {
+        for (var i = 0; i < event.pairs.length; i++)
+        {
+            var bodyA = event.pairs[i].bodyA;
+            var bodyB = event.pairs[i].bodyB;
+
+            // if ((bodyA === playerBody && bodyB.label === 'disappearingPlatform') ||
+            //     (bodyB === playerBody && bodyA.label === 'disappearingPlatform'))
+            // {
+                
+            // }
+        }
+    }, this);
+
+    this.matter.world.on('beforeupdate', function (event) 
+    {
+    });
+
+    this.matter.world.on('collisionactive', function (event)
+    {
+        // var playerBody = playerController.body;
+        for (var i = 0; i < event.pairs.length; i++)
+        {
+            var bodyA = event.pairs[i].bodyA;
+            var bodyB = event.pairs[i].bodyB;
+        }
+    });
+
+    // Update over, so now we can determine if any direction is blocked
+    this.matter.world.on('afterupdate', function (event) 
+    {
+    });
 
     // cursors = this.input.keyboard.createCursorKeys();
     keys = 
@@ -188,11 +297,11 @@ function update ()
 	let speed = 0;
 	if(keys.run.isDown)
 	{
-		speed = 1.0;
+		speed = 1;
 	}
 	else if(keys.crouch.isDown)
 	{
-		speed = 2;
+		speed = 0.3;
 	}
 	else
 	{
@@ -270,8 +379,8 @@ function update ()
 
 	let player_z = player.y + (player.height * player.originY);
 	// let clone_z = clone.y + (clone.height * clone.originY);
-	player.setZ(player_z);
-	player.setDepth(player_z);
+	// player.setZ(player_z);
+	// player.setDepth(player_z);
 	// clone.setZ(player_z);
 	// clone.setDepth(player_z);
 
