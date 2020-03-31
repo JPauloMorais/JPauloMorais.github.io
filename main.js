@@ -35,11 +35,11 @@ var config = {
     renderer: {type: Phaser.WEBGL, mipmapFilter: 'NEAREST' },
     pixelArt: true,
     clearBeforeRender: true,
-    zoom: 4,
+    zoom: 5,
     physics: {
         default: 'matter',
         matter: {
-        	debug: true,
+        	// debug: true,
         	gravity: {
                 x: 0,
                 y: 0
@@ -57,10 +57,14 @@ var game = new Phaser.Game(config);
 
 var scene;
 var player;
-var clone;
+var germs;
+var germSpline;
+var germSplineT;
+var germPosition;
 var keys;
 var last_direction;
 var map;
+var fpsText;
 
 function preload ()
 {
@@ -70,6 +74,8 @@ function preload ()
     // this.load.json('male', './assets/male.json');
     this.load.image('tileset', 'assets/tileset_inside.png');
     this.load.tilemapTiledJSON('map', './assets/tilemap_inside.json');
+
+    this.load.atlas('germ', 'assets/germ.png', 'assets/germ.json');
 }
 
 function spriteFromAsepriteAtlas(atlasTexture)
@@ -218,17 +224,6 @@ function create ()
 	player.setPosition(windowWidth/2,windowHeight/2);
     player.setRectangle(5,2);
 	player.setOrigin(0.5,0.9);
-	for(objectLayerIndex in map.objects)
-	{
-		for(objectIndex in map.objects[objectLayerIndex].objects)
-		{
-			object = map.objects[objectLayerIndex].objects[objectIndex];
-			if(object.name == 'player_spawn')
-			{
-				player.setPosition(mapX+object.x, mapY+object.y);
-			}
-		}	
-	}
 	// player.setScale(4);
 	player.setFixedRotation();
     player.setAngle(0);
@@ -238,6 +233,51 @@ function create ()
     last_direction = new Phaser.Math.Vector2(0,0); 
 	// player.setCollideWorldBounds(true);
 	// sprite.anims.play('walk_u');
+
+	for(objectLayerIndex in map.objects)
+	{
+		for(objectIndex in map.objects[objectLayerIndex].objects)
+		{
+			object = map.objects[objectLayerIndex].objects[objectIndex];
+			if(object.name == 'player_spawn')
+			{
+				player.setPosition(mapX+object.x, mapY+object.y);
+			}
+			else if (object.name = 'germ_spawn')
+			{
+				let germ_particles = this.add.particles('germ');
+				germ_particles.setDepth(1.5);
+				// var path = new Phaser.Curves.Path(object.x, object.y).lineTo(player.x, player.y).closePath();
+				// germs = germ_particles.createEmitter({
+				// 				        frame: [ 'germ 0.aseprite' ],
+				// 				        x: object.x,
+				// 				        y: object.y,
+				// 				        lifespan: 1000,
+				// 				        speed: { min: 0.1, max: 10 },
+				// 				        // scale: { start: 0.7, end: 0 },
+				// 				        alpha: 1.0,
+				// 				        maxParticles: 10000,
+				// 				        quantity: 2,
+				// 				        emitZone: { type: 'edge', source: path, quantity: 48, yoyo: false},
+				// 				        blendMode: 'ADD'
+				// 					});
+				germs = germ_particles.createEmitter({
+											        frame: { frames: [ 'germ 0.aseprite' ], cycle: false },
+											        scale: 1,
+											        alpha: 1,
+											        // blendMode: 'ADD',
+											        // follow: player,
+													speedY: { min: 1, max: 10 },
+													speedX: { min: 1, max: 10 },
+								        			maxParticles: 10000,
+											        // emitZone: { type: 'edge', source: path, quantity: 1000, yoyo: false }
+											    	});
+				germPosition = {x:object.x, y:object.y};
+				// germSpline = new Phaser.Curves.Spline([object.x,object.y,player.x,player.y]);
+				// germSplineT = 0;
+			}
+		}	
+	}
 
 	// clone = spriteFromAsepriteAtlas(this.textures.get('prepper'));
 	// // clone.anims.play('idle', true);
@@ -290,10 +330,19 @@ function create ()
     	run: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT),
     	crouch: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.CTRL)
     };
+
+    fpsText = this.add.text(10, 10, 'FPS: --', {
+        font: 'bold 26px Arial',
+        fill: '#ffffff'
+    });
+
+	// germSpline.draw(this.add.graphics);
 }
 
-function update ()
+function update (time, delta)
 {
+	fpsText.setText('FPS: ' + (1000/delta).toFixed(3));
+
 	let speed = 0;
 	if(keys.run.isDown)
 	{
@@ -303,7 +352,7 @@ function update ()
 	{
 		speed = 0.3;
 	}
-	else
+	else if(keys.up.isDown||keys.down.isDown||keys.left.isDown||keys.right.isDown)
 	{
 		speed = 0.5;
 	}
@@ -375,16 +424,56 @@ function update ()
 		}
 	}
 
+	// TODO: fix p/ staircase effect ao mover em diagonais
 	player.setVelocity(direction.x * speed, direction.y * speed);
+	// let px = 0, py = 0;
+	// let velocity = {x:(direction.x * speed), y:(direction.y * speed)}
+	// if(direction.x != 0 && direction.y != 0)
+	// {
+	// 	if (Math.abs(velocity.x) >= Math.abs(velocity.y) ) 
+	// 	{
+	// 	    px = Math.round(player.x);
+	// 	    py = Math.round(player.y + (px - player.x) * velocity.y / velocity.x);
+	// 	} 
+	// 	else 
+	// 	{
+	// 	    py = Math.round(player.y);
+	// 	    px = Math.round(player.x + (py - player.y) * velocity.x / velocity.y);
+	// 	}
+	// }
+	// else
+	// {
+	// 	px = player.x + velocity.x;
+	// 	py = player.y + velocity.y;
+	// }
+	// player.setPosition(px,py);
 
-	let player_z = player.y + (player.height * player.originY);
+	let player_z = (player.y + (player.height * player.originY))/windowHeight;
 	// let clone_z = clone.y + (clone.height * clone.originY);
 	// player.setZ(player_z);
-	// player.setDepth(player_z);
+	player.setDepth(player_z);
 	// clone.setZ(player_z);
 	// clone.setDepth(player_z);
 
-	this.cameras.main.centerOn(player.x, player.y);
+	// this.cameras.main.centerOn(player.x, player.y);
 
 	last_direction = direction;
+
+	// var path = new Phaser.Curves.Path(0,0).lineTo(player.x, player.y).closePath();
+	// germs.setEmitZone({ type: 'edge', source: path, quantity: 0, quantity: 1000, yoyo: false });
+	// germs.data.get('vector').set(dragX, dragY);
+	// germs.emitZone.updateSource();
+	// germSpline.addPoint(player.x,player.y);
+	// germSpline.points[1].x = player.x;
+	// germSpline.points[1].y = player.y;
+	// germSpline.updateArcLengths();
+	// let gp = germSpline.getPointAt(germSplineT);
+	// germSplineT += (delta/1000)*(1.0/5);
+	// if(germSplineT >= 1.0) germSplineT = 0.0;
+	let germDirection = new Phaser.Math.Vector2(player.x,player.y)
+	germDirection.subtract(new Phaser.Math.Vector2(germPosition.x,germPosition.y));
+	germDirection.normalize();
+	germPosition.x += germDirection.x * speed;
+	germPosition.y += germDirection.y * speed;
+	germs.setPosition(germPosition.x,germPosition.y);
 }
