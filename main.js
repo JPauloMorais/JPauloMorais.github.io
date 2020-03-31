@@ -28,14 +28,18 @@
 var windowWidth = 1155;
 var windowHeight = 650;
 var config = {
-    type: Phaser.WEBGL,
     width: windowWidth,
     height: windowHeight,
     autoCenter: Phaser.Scale.CENTER_BOTH,
+    // antialiasGL: false,
+    renderer: {type: Phaser.WEBGL, mipmapFilter: 'NEAREST' },
+    pixelArt: true,
+    clearBeforeRender: true,
+    zoom: 4,
     physics: {
         default: 'matter',
         matter: {
-        	debug: true,
+        	// debug: true,
         	gravity: {
                 x: 0,
                 y: 0
@@ -60,22 +64,23 @@ var map;
 
 function preload ()
 {
-    this.load.atlas('male', './assets/male.png', './assets/male.json');
+    this.load.atlas('prepper', './assets/prepper.png', './assets/prepper.json');
+    // this.load.atlas('male', './assets/male.png', './assets/male.json');
     // this.load.image('male', './assets/male.png');
     // this.load.json('male', './assets/male.json');
-    this.load.image('tileset', 'assets/tileset.png');
-    this.load.tilemapTiledJSON('map', './assets/tilemap.json');
+    this.load.image('tileset', 'assets/tileset_inside.png');
+    this.load.tilemapTiledJSON('map', './assets/tilemap_inside.json');
 }
 
 function spriteFromAsepriteAtlas(atlasTexture)
 {
-	var body_config = 
-	{
-		label: atlasTexture.key+'_body',
-		vertices: [{x:-13,y:(45)},{x:+13,y:(45)},{x:+13,y:(50)},{x:-13,y:(50)}]
-		// position: {x:0,y:42}
-	};
-	var sprite = scene.matter.add.sprite(0,0,atlasTexture.key, null, body_config);
+	// var body_config = 
+	// {
+	// 	label: atlasTexture.key+'_body',
+	// 	vertices: [{x:-13,y:(45)},{x:+13,y:(45)},{x:+13,y:(50)},{x:-13,y:(50)}]
+	// 	// position: {x:0,y:42}
+	// };
+	var sprite = scene.matter.add.sprite(0,0,atlasTexture.key);//, null, body_config);
 
 	let frameTags = atlasTexture.customData.meta.frameTags;
 	for(tagIndex in frameTags)
@@ -126,9 +131,31 @@ function create ()
 	// var sprite = this.add.sprite(400, 300, 'male');
 	// sprite.anims.load('walk_d');
 	// sprite.anims.play('walk_d');
-	player = spriteFromAsepriteAtlas(this.textures.get('male'));
-	player.anims.play('idle_d', true);
+
+	// renderTexture = this.add.renderTexture(0, 0, windowWidth, windowHeight);
+	
+	map = this.make.tilemap({ key: 'map' });
+    var tileset = map.addTilesetImage('tileset_inside', 'tileset');
+    let mapX = 0;//(windowWidth/2) - (map.widthInPixels/2);
+    let mapY = 0;//(windowHeight/2) - (map.heightInPixels/2);
+    map.createDynamicLayer('ground', tileset, mapX, mapY).setVisible(true);
+    map.createDynamicLayer('walls', tileset, mapX, mapY).setVisible(true);
+    
+	player = spriteFromAsepriteAtlas(this.textures.get('prepper'));
+	player.anims.play('idle', true);
 	player.setPosition(400,300);
+	for(objectLayerIndex in map.objects)
+	{
+		for(objectIndex in map.objects[objectLayerIndex].objects)
+		{
+			object = map.objects[objectLayerIndex].objects[objectIndex];
+			if(object.name == 'player_spawn')
+			{
+				player.setPosition(mapX+object.x, mapY+object.y);
+			}
+		}	
+	}
+	// player.setScale(4);
 	player.setOrigin(0.5,0.9);
 	player.setFixedRotation();
     player.setAngle(0);
@@ -139,9 +166,10 @@ function create ()
 	// player.setCollideWorldBounds(true);
 	// sprite.anims.play('walk_u');
 
-	clone = spriteFromAsepriteAtlas(this.textures.get('male'));
-	clone.setPosition(400,400);
-	clone.setActive(true);
+	// clone = spriteFromAsepriteAtlas(this.textures.get('prepper'));
+	// // clone.anims.play('idle', true);
+	// clone.setPosition(400,400);
+	// clone.setActive(true);
 
     // cursors = this.input.keyboard.createCursorKeys();
     keys = 
@@ -153,13 +181,6 @@ function create ()
     	run: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT),
     	crouch: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.CTRL)
     };
-
-	map = this.make.tilemap({ key: 'map' });
-    var tileset = map.addTilesetImage('tileset', 'tileset');
-    let mapX = (windowWidth/2) - (map.widthInPixels/2);
-    let mapY = (windowHeight/2) - (map.heightInPixels/2);
-    map.createDynamicLayer('ground', tileset, mapX, mapY).setVisible(true);
-    map.createDynamicLayer('ground2', tileset, mapX, mapY).setVisible(true);
 }
 
 function update ()
@@ -190,47 +211,31 @@ function update ()
 	direction.normalize();
 
 	if(direction.equals(new Phaser.Math.Vector2( 0,-1)) ||
+	   direction.equals(new Phaser.Math.Vector2(-1, 0)) ||
 	   direction.equals(new Phaser.Math.Vector2(-1,-1).normalize()) ||
-	   direction.equals(new Phaser.Math.Vector2(+1,-1).normalize()))
+	   direction.equals(new Phaser.Math.Vector2(-1,+1).normalize()))
 	{
-		if(keys.run.isDown)
-			player.anims.play('run_u', true);
-		else if(keys.crouch.isDown)
-			player.anims.play('crawl_u', true);
-		else
-			player.anims.play('walk_u', true);
+		// if(keys.run.isDown)
+		// 	player.anims.play('run_u', true);
+		// else if(keys.crouch.isDown)
+		// 	player.anims.play('crawl_u', true);
+		// else
+		// 	player.anims.play('walk_u', true);
+		player.anims.play('walk', true);
 		player.setFlipX(false);
 	}
 	else if(direction.equals(new Phaser.Math.Vector2( 0,+1)) ||
-			direction.equals(new Phaser.Math.Vector2(-1,+1).normalize()) ||
-	   		direction.equals(new Phaser.Math.Vector2(+1,+1).normalize()))
+			direction.equals(new Phaser.Math.Vector2(+1, 0)) ||
+	   		direction.equals(new Phaser.Math.Vector2(+1,+1).normalize()) ||
+	   		direction.equals(new Phaser.Math.Vector2(+1,-1).normalize()))
 	{
-		if(keys.run.isDown)
-			player.anims.play('run_d', true);
-		else if(keys.crouch.isDown)
-			player.anims.play('crawl_d', true);
-		else
-			player.anims.play('walk_d', true);
-		player.setFlipX(false);
-	}
-	else if(direction.equals(new Phaser.Math.Vector2(-1,0)))
-	{
-		if(keys.run.isDown)
-			player.anims.play('run_s', true);
-		else if(keys.crouch.isDown)
-			player.anims.play('crawl_s', true);
-		else
-			player.anims.play('walk_s', true);
-		player.setFlipX(false);
-	}
-	else if(direction.equals(new Phaser.Math.Vector2(+1,0)))
-	{
-		if(keys.run.isDown)
-			player.anims.play('run_s', true);
-		else if(keys.crouch.isDown)
-			player.anims.play('crawl_s', true);
-		else
-			player.anims.play('walk_s', true);
+		// if(keys.run.isDown)
+		// 	player.anims.play('run_d', true);
+		// else if(keys.crouch.isDown)
+		// 	player.anims.play('crawl_d', true);
+		// else
+		// 	player.anims.play('walk_d', true);
+		player.anims.play('walk', true);
 		player.setFlipX(true);
 	}
 	else
@@ -239,24 +244,24 @@ function update ()
 		   last_direction.equals(new Phaser.Math.Vector2(-1,-1).normalize()) ||
 		   last_direction.equals(new Phaser.Math.Vector2(+1,-1).normalize()))
 		{
-			player.anims.play('idle_u', true);
+			player.anims.play('idle', true);
 			player.setFlipX(false);
 		}
 		else if(last_direction.equals(new Phaser.Math.Vector2( 0,+1)) ||
 				last_direction.equals(new Phaser.Math.Vector2(-1,+1).normalize()) ||
 		   		last_direction.equals(new Phaser.Math.Vector2(+1,+1).normalize()))
 		{
-			player.anims.play('idle_d', true);
+			player.anims.play('idle', true);
 			player.setFlipX(false);
 		}
 		else if(last_direction.equals(new Phaser.Math.Vector2(-1,0)))
 		{
-			player.anims.play('idle_s', true);
+			player.anims.play('idle', true);
 			player.setFlipX(false);
 		}
 		else if(last_direction.equals(new Phaser.Math.Vector2(+1,0)))
 		{
-			player.anims.play('idle_s', true);
+			player.anims.play('idle', true);
 			player.setFlipX(true);
 		}
 	}
@@ -264,11 +269,13 @@ function update ()
 	player.setVelocity(direction.x * speed, direction.y * speed);
 
 	let player_z = player.y + (player.height * player.originY);
-	let clone_z = clone.y + (clone.height * clone.originY);
-	player.setZ(clone_z);
-	player.setDepth(clone_z);
-	clone.setZ(player_z);
-	clone.setDepth(player_z);
+	// let clone_z = clone.y + (clone.height * clone.originY);
+	player.setZ(player_z);
+	player.setDepth(player_z);
+	// clone.setZ(player_z);
+	// clone.setDepth(player_z);
+
+	this.cameras.main.centerOn(player.x, player.y);
 
 	last_direction = direction;
 }
