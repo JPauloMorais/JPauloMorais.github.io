@@ -188,7 +188,7 @@ function update ()
 	let speed = 0;
 	if(keys.run.isDown)
 	{
-		speed = 7;
+		speed = 1.0;
 	}
 	else if(keys.crouch.isDown)
 	{
@@ -196,7 +196,7 @@ function update ()
 	}
 	else
 	{
-		speed = 4;
+		speed = 0.5;
 	}
 	
 	let direction = new Phaser.Math.Vector2(0,0);
