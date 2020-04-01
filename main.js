@@ -35,7 +35,7 @@ var config = {
     renderer: {type: Phaser.WEBGL, mipmapFilter: 'NEAREST' },
     pixelArt: true,
     clearBeforeRender: true,
-    zoom: 5,
+    // zoom: 5,
     physics: {
         default: 'matter',
         matter: {
@@ -65,6 +65,9 @@ var keys;
 var last_direction;
 var map;
 var fpsText;
+var cameraBounds;
+var cameraPositionsSpline;
+var cameraZoomValues;
 
 function preload ()
 {
@@ -216,8 +219,6 @@ function create ()
 	setupLayerColliders(tileset, map, walls);
 
     let bodyCount = this.matter.world.getAllBodies().length;
-
-    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     
 	player = spriteFromAsepriteAtlas(this.textures.get('prepper'));
 	player.anims.play('idle', true);
@@ -234,6 +235,7 @@ function create ()
 	// player.setCollideWorldBounds(true);
 	// sprite.anims.play('walk_u');
 
+	cameraBounds = [];
 	for(objectLayerIndex in map.objects)
 	{
 		for(objectIndex in map.objects[objectLayerIndex].objects)
@@ -243,12 +245,12 @@ function create ()
 			{
 				player.setPosition(mapX+object.x, mapY+object.y);
 			}
-			else if (object.name = 'germ_spawn')
+			else if (object.name == 'germ_spawn')
 			{
-				let germ_particles = this.add.particles('germ');
-				germ_particles.setDepth(1.5);
+				let germParticles = this.add.particles('germ');
+				germParticles.setDepth(1.5);
 				// var path = new Phaser.Curves.Path(object.x, object.y).lineTo(player.x, player.y).closePath();
-				// germs = germ_particles.createEmitter({
+				// germs = germParticles.createEmitter({
 				// 				        frame: [ 'germ 0.aseprite' ],
 				// 				        x: object.x,
 				// 				        y: object.y,
@@ -261,24 +263,79 @@ function create ()
 				// 				        emitZone: { type: 'edge', source: path, quantity: 48, yoyo: false},
 				// 				        blendMode: 'ADD'
 				// 					});
-				germs = germ_particles.createEmitter({
+				germs = germParticles.createEmitter({
 											        frame: { frames: [ 'germ 0.aseprite' ], cycle: false },
 											        scale: 1,
 											        alpha: 1,
 											        // blendMode: 'ADD',
 											        // follow: player,
-													speedY: { min: 1, max: 10 },
-													speedX: { min: 1, max: 10 },
-								        			maxParticles: 10000,
+													speed: { min: -5, max: +5 },
+								        			maxParticles: 1000,
+								        			lifespan: 2000,
+								        			bounds: {x:0,y:0, width:map.widthInPixels,height:map.heightInPixels},
 											        // emitZone: { type: 'edge', source: path, quantity: 1000, yoyo: false }
 											    	});
 				germPosition = {x:object.x, y:object.y};
+				// germParticles.setInteractive(player);
 				// germSpline = new Phaser.Curves.Spline([object.x,object.y,player.x,player.y]);
 				// germSplineT = 0;
 			}
-		}	
+			else if(object.name == 'camBounds')
+			{
+				let index = 0;
+				for(property of object.properties)
+				{
+					if(property.name=='index')
+					{
+						index = property.value;
+						break;
+					}
+				}
+				cameraBounds.push({x:object.x, y:object.y, width:object.width, height:object.height, index:index});
+				// this.cameras.main.pan(object.x+(object.width/2), object.y+(object.height/2), 1000, 'Sine.easeInOut');
+				// this.cameras.main.zoomTo(windowHeight/object.height, 1000);
+			}
+		}
 	}
 
+    this.cameras.main.setBounds(0, 0, windowWidth, windowHeight);
+	if(cameraBounds.length > 0)
+	{
+		cameraBounds.sort(function(a, b){return a.index - b.index});
+
+		let points = [];
+		cameraZoomValues = [];
+		for(bounds of cameraBounds)
+		{
+			points.push(bounds.x+(bounds.width/2), bounds.y+(bounds.height/2));
+			cameraZoomValues.push(windowHeight/bounds.height);
+		}
+		cameraPositionsSpline = new Phaser.Curves.Spline(points);
+		// cameraPositionsSpline = new Phaser.Curves.Path(cameraBounds[0].x+(cameraBounds[0].width/2), cameraBounds[0].y+(cameraBounds[0].height/2));
+		// cameraZoomValues = [];
+		// cameraZoomValues.push(windowHeight/cameraBounds[0].height);
+		// for(var i = 1; i < cameraBounds.length; i++)
+		// {
+		// 	cameraPositionsPath.lineTo(cameraBounds[i].x+(cameraBounds[i].width/2), cameraBounds[i].y+(cameraBounds[i].height/2));
+		// 	cameraZoomValues.push(windowHeight/cameraBounds[i].height);
+		// }
+		// cameraPositionsPath.closePath();
+
+		// let camT = 1;
+		// let camP = cameraPositionsSpline.getPointAt(camT);
+		// this.cameras.main.pan(camP.x, camP.y, 100, 'Sine.easeInOut');
+		// let camZ = Phaser.Math.Interpolation.Linear(cameraZoomValues, camT);
+		// this.cameras.main.zoomTo(camZ, 100);
+		// 
+		// this.cameras.main.setPosition(cameraBounds[0].x, cameraBounds[0].y);
+		// this.cameras.main.setScroll(cameraBounds[0].x, cameraBounds[0].y);
+		// this.cameras.main.setSize(cameraBounds[0].width, cameraBounds[0].height);
+	}
+	else
+	{
+    	// this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+	}
+	
 	// clone = spriteFromAsepriteAtlas(this.textures.get('prepper'));
 	// // clone.anims.play('idle', true);
 	// clone.setPosition(400,400);
@@ -472,8 +529,35 @@ function update (time, delta)
 	// if(germSplineT >= 1.0) germSplineT = 0.0;
 	let germDirection = new Phaser.Math.Vector2(player.x,player.y)
 	germDirection.subtract(new Phaser.Math.Vector2(germPosition.x,germPosition.y));
+	// if(germDirection.x >= germDirection.y)
+	// {
+	// 	germDirection.y = 0.0;
+	// }
+	// else
+	// {
+	// 	germDirection.x = 0.0;
+	// }
 	germDirection.normalize();
+	speed = 0.3;
 	germPosition.x += germDirection.x * speed;
 	germPosition.y += germDirection.y * speed;
 	germs.setPosition(germPosition.x,germPosition.y);
+
+	let camT = 0;
+	let fromPlayer = new Phaser.Math.Vector2(player.x,player.y);
+	let firstCamBounds = new Phaser.Geom.Rectangle(cameraBounds[0].x,cameraBounds[0].y,cameraBounds[0].width,cameraBounds[0].height);
+	let playerBounds = new Phaser.Geom.Rectangle(player.x-1,player.y-1,2,2);
+	let intersectionWithCamBounds = Phaser.Geom.Rectangle.Intersection(firstCamBounds, playerBounds);
+	if(intersectionWithCamBounds.width == 0 && intersectionWithCamBounds.height == 0)
+	{
+		camT = cameraPositionsSpline.getTFromDistance(fromPlayer.distance(cameraPositionsSpline.getStartPoint()));
+	}
+	else
+		camT = cameraPositionsSpline.getTFromDistance(Math.sqrt(fromPlayer.distance(cameraPositionsSpline.getStartPoint())));
+
+	let camP = cameraPositionsSpline.getPointAt(camT);
+	this.cameras.main.pan(camP.x, camP.y, 100, 'Sine.easeInOut');
+	let camZ = Phaser.Math.Interpolation.Linear(cameraZoomValues, camT);
+	this.cameras.main.zoomTo(camZ, 100);
+
 }
