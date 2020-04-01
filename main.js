@@ -235,6 +235,10 @@ function create ()
 	// player.setCollideWorldBounds(true);
 	// sprite.anims.play('walk_u');
 
+	let germParticles = this.add.particles('germ');
+	germParticles.setDepth(1.5);
+	germs = [];
+
 	cameraBounds = [];
 	for(objectLayerIndex in map.objects)
 	{
@@ -247,8 +251,6 @@ function create ()
 			}
 			else if (object.name == 'germ_spawn')
 			{
-				let germParticles = this.add.particles('germ');
-				germParticles.setDepth(1.5);
 				// var path = new Phaser.Curves.Path(object.x, object.y).lineTo(player.x, player.y).closePath();
 				// germs = germParticles.createEmitter({
 				// 				        frame: [ 'germ 0.aseprite' ],
@@ -263,7 +265,7 @@ function create ()
 				// 				        emitZone: { type: 'edge', source: path, quantity: 48, yoyo: false},
 				// 				        blendMode: 'ADD'
 				// 					});
-				germs = germParticles.createEmitter({
+				let germ = germParticles.createEmitter({
 											        frame: { frames: [ 'germ 0.aseprite' ], cycle: false },
 											        scale: 1,
 											        alpha: 1,
@@ -275,7 +277,8 @@ function create ()
 								        			bounds: {x:0,y:0, width:map.widthInPixels,height:map.heightInPixels},
 											        // emitZone: { type: 'edge', source: path, quantity: 1000, yoyo: false }
 											    	});
-				germPosition = {x:object.x, y:object.y};
+				let germPosition = {x:object.x, y:object.y};
+				germs.push({germ:germ, position:germPosition});
 				// germParticles.setInteractive(player);
 				// germSpline = new Phaser.Curves.Spline([object.x,object.y,player.x,player.y]);
 				// germSplineT = 0;
@@ -311,6 +314,7 @@ function create ()
 			cameraZoomValues.push(windowHeight/bounds.height);
 		}
 		cameraPositionsSpline = new Phaser.Curves.Spline(points);
+		cameraPositionsSpline.updateArcLengths();
 		// cameraPositionsSpline = new Phaser.Curves.Path(cameraBounds[0].x+(cameraBounds[0].width/2), cameraBounds[0].y+(cameraBounds[0].height/2));
 		// cameraZoomValues = [];
 		// cameraZoomValues.push(windowHeight/cameraBounds[0].height);
@@ -527,8 +531,16 @@ function update (time, delta)
 	// let gp = germSpline.getPointAt(germSplineT);
 	// germSplineT += (delta/1000)*(1.0/5);
 	// if(germSplineT >= 1.0) germSplineT = 0.0;
-	let germDirection = new Phaser.Math.Vector2(player.x,player.y)
-	germDirection.subtract(new Phaser.Math.Vector2(germPosition.x,germPosition.y));
+	for(germ of germs)
+	{
+		let germDirection = new Phaser.Math.Vector2(player.x,player.y)
+		germDirection.subtract(new Phaser.Math.Vector2(germ.position.x,germ.position.y));
+		germDirection.normalize();
+		speed = 0.3;
+		germ.position.x += germDirection.x * speed;
+		germ.position.y += germDirection.y * speed;
+		germ.germ.setPosition(germ.position.x,germ.position.y);
+	}
 	// if(germDirection.x >= germDirection.y)
 	// {
 	// 	germDirection.y = 0.0;
@@ -537,11 +549,6 @@ function update (time, delta)
 	// {
 	// 	germDirection.x = 0.0;
 	// }
-	germDirection.normalize();
-	speed = 0.3;
-	germPosition.x += germDirection.x * speed;
-	germPosition.y += germDirection.y * speed;
-	germs.setPosition(germPosition.x,germPosition.y);
 
 	let camT = 0;
 	let fromPlayer = new Phaser.Math.Vector2(player.x,player.y);
@@ -555,9 +562,19 @@ function update (time, delta)
 	else
 		camT = cameraPositionsSpline.getTFromDistance(Math.sqrt(fromPlayer.distance(cameraPositionsSpline.getStartPoint())));
 
-	let camP = cameraPositionsSpline.getPointAt(camT);
-	this.cameras.main.pan(camP.x, camP.y, 100, 'Sine.easeInOut');
+	camT = 0;	
+	let camP = cameraPositionsSpline.getPoint(camT);
+	// this.cameras.main.pan(camP.x, camP.y, 100, 'Sine.easeInOut');
 	let camZ = Phaser.Math.Interpolation.Linear(cameraZoomValues, camT);
-	this.cameras.main.zoomTo(camZ, 100);
+	// this.cameras.main.zoomTo(camZ, 100);
+	// this.cameras.main.zoomTo(5, 100);
 
+	scene.add.graphics().lineStyle(4, 0xffffff);
+	cameraPositionsSpline.draw(scene.add.graphics());
+
+	// algoritmo
+	// obtem t da distancia do player p/ ponto
+	// se t >= 1/qtdDePontos 
+	// 		calcula vetor de dir do ponto atual pro proximo, ponto atual pro anterior, ponto atual pro player
+	// 		mede 
 }
