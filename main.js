@@ -66,8 +66,16 @@ var last_direction;
 var map;
 var fpsText;
 var cameraBounds;
-var cameraPositionsSpline;
 var cameraZoomValues;
+var cameraPositionsPath;
+var cameraPositionsPathT;
+var currentPointT;
+var nextPointT;
+var lastPointT;
+var cameraPositionPointsCount;
+var cameraPositionLines;
+var cameraPosition;
+var cameraZoom;
 
 function preload ()
 {
@@ -294,7 +302,8 @@ function create ()
 						break;
 					}
 				}
-				cameraBounds.push({x:object.x, y:object.y, width:object.width, height:object.height, index:index});
+				cameraBounds.push({x:object.x, y:object.y, width:object.width, height:object.height, index:index,
+								   center:{x:object.x+(object.width/2), y:object.y+(object.height/2)}});
 				// this.cameras.main.pan(object.x+(object.width/2), object.y+(object.height/2), 1000, 'Sine.easeInOut');
 				// this.cameras.main.zoomTo(windowHeight/object.height, 1000);
 			}
@@ -305,47 +314,71 @@ function create ()
 	if(cameraBounds.length > 0)
 	{
 		cameraBounds.sort(function(a, b){return a.index - b.index});
-
-		let points = [];
 		cameraZoomValues = [];
-		for(bounds of cameraBounds)
+		cameraZoomValues.push(windowHeight/cameraBounds[0].height);
+		cameraPositionLines = [];
+		var lastPoint = {x:cameraBounds[0].center.x, y:cameraBounds[0].center.y};
+		var pp = new Phaser.Math.Vector2(player.x,player.y);
+		var p = new Phaser.Math.Vector2(lastPoint.x,lastPoint.y);
+		var smallestDistance = p.subtract(pp).length();
+		cameraPositionLineIndex = 0;
+		cameraPosition = new Phaser.Math.Vector2(p.x,p.y);
+		cameraZoom = cameraZoomValues[0];
+		for(var i = 1; i < cameraBounds.length; i++)
 		{
-			points.push(bounds.x+(bounds.width/2), bounds.y+(bounds.height/2));
+			let bounds = cameraBounds[i];
 			cameraZoomValues.push(windowHeight/bounds.height);
+			var curPoint = {x:bounds.center.x, y:bounds.center.y};
+			cameraPositionLines.push(new Phaser.Geom.Line(lastPoint.x,lastPoint.y, curPoint.x,curPoint.y));
+			p.set(curPoint.x,curPoint.y);
+			let d = p.subtract(pp).length();
+			if(d < smallestDistance)
+			{
+				smallestDistance = d;
+				cameraPositionLineIndex = cameraPositionLines.length-1;
+				cameraPosition.set(curPoint.x,curPoint.y);
+				cameraZoom = cameraZoomValues[cameraZoomValues.length-1];
+			}
+			lastPoint = curPoint;
 		}
-		cameraPositionsSpline = new Phaser.Curves.Spline(points);
-		cameraPositionsSpline.updateArcLengths();
-		// cameraPositionsSpline = new Phaser.Curves.Path(cameraBounds[0].x+(cameraBounds[0].width/2), cameraBounds[0].y+(cameraBounds[0].height/2));
+		
+		// crando path entre centros dos cameraBounds
+		// let points = [];
 		// cameraZoomValues = [];
-		// cameraZoomValues.push(windowHeight/cameraBounds[0].height);
+		// cameraPositionsPath = new Phaser.Curves.Path(cameraBounds[0].x+(cameraBounds[0].width/2), cameraBounds[0].y+(cameraBounds[0].height/2));
 		// for(var i = 1; i < cameraBounds.length; i++)
 		// {
-		// 	cameraPositionsPath.lineTo(cameraBounds[i].x+(cameraBounds[i].width/2), cameraBounds[i].y+(cameraBounds[i].height/2));
-		// 	cameraZoomValues.push(windowHeight/cameraBounds[i].height);
+		// 	let bounds = cameraBounds[i];
+		// 	cameraPositionsPath.lineTo(bounds.x+(bounds.width/2), bounds.y+(bounds.height/2));
+		// 	cameraZoomValues.push(windowHeight/bounds.height);
 		// }
-		// cameraPositionsPath.closePath();
-
-		// let camT = 1;
-		// let camP = cameraPositionsSpline.getPointAt(camT);
-		// this.cameras.main.pan(camP.x, camP.y, 100, 'Sine.easeInOut');
-		// let camZ = Phaser.Math.Interpolation.Linear(cameraZoomValues, camT);
-		// this.cameras.main.zoomTo(camZ, 100);
-		// 
-		// this.cameras.main.setPosition(cameraBounds[0].x, cameraBounds[0].y);
-		// this.cameras.main.setScroll(cameraBounds[0].x, cameraBounds[0].y);
-		// this.cameras.main.setSize(cameraBounds[0].width, cameraBounds[0].height);
+		// cameraPositionPointsCount = cameraBounds.length;
+		// // escolhendo cameraBounds inicial
+		// let playerRect = new Phaser.Geom.Rectangle(player.x-1,player.y-1,2,2);
+		// for(boundsIndex in cameraBounds)
+		// {
+		// 	let bounds = cameraBounds[boundsIndex];
+		// 	let boundsRect = new Phaser.Geom.Rectangle(bounds.x,bounds.y,bounds.width,bounds.height);
+		// 	let playerBoundsIntersection = Phaser.Geom.Rectangle.Intersection(boundsRect, playerRect);
+		// 	if(playerBoundsIntersection.width != 0 || playerBoundsIntersection.height != 0)
+		// 	{
+		// 		cameraPositionsPathT = boundsIndex * (1.0/(cameraPositionPointsCount-1));
+		// 	}
+		// }
+		// currentPointT = Math.floor(cameraPositionsPathT * cameraPositionPointsCount) * (1.0/cameraPositionPointsCount);
+		// nextPointT = currentPointT+(1.0/cameraPositionPointsCount);
+		// lastPointT = currentPointT-(1.0/cameraPositionPointsCount);
 	}
 	else
 	{
-    	// this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+		cameraPosition = new Phaser.Math.Vector2(p.x,p.y);
+		cameraZoom = 1.0;
 	}
 	
-	// clone = spriteFromAsepriteAtlas(this.textures.get('prepper'));
-	// // clone.anims.play('idle', true);
-	// clone.setPosition(400,400);
-	// clone.setActive(true);
-	// 
-	
+
+	// this.cameras.main.startFollow(player, false, 0.5, 0.5);
+	// this.cameras.main.zoomTo(5, 100);
+
 	    // Loop over the active colliding pairs and count the surfaces the player is touching.
     this.matter.world.on('collisionstart', function (event) 
     {
@@ -393,16 +426,18 @@ function create ()
     };
 
     fpsText = this.add.text(10, 10, 'FPS: --', {
-        font: 'bold 26px Arial',
+        font: 'bold 16px Arial',
         fill: '#ffffff'
     });
+	fpsText.setDepth(3);
 
 	// germSpline.draw(this.add.graphics);
 }
 
 function update (time, delta)
 {
-	fpsText.setText('FPS: ' + (1000/delta).toFixed(3));
+	// scene.add.graphics().fillStyle('0xaaaaaa',1.0);
+	// scene.add.graphics().fillRect(0, 0, windowWidth, windowHeight);
 
 	let speed = 0;
 	if(keys.run.isDown)
@@ -550,31 +585,154 @@ function update (time, delta)
 	// 	germDirection.x = 0.0;
 	// }
 
-	let camT = 0;
-	let fromPlayer = new Phaser.Math.Vector2(player.x,player.y);
-	let firstCamBounds = new Phaser.Geom.Rectangle(cameraBounds[0].x,cameraBounds[0].y,cameraBounds[0].width,cameraBounds[0].height);
-	let playerBounds = new Phaser.Geom.Rectangle(player.x-1,player.y-1,2,2);
-	let intersectionWithCamBounds = Phaser.Geom.Rectangle.Intersection(firstCamBounds, playerBounds);
-	if(intersectionWithCamBounds.width == 0 && intersectionWithCamBounds.height == 0)
-	{
-		camT = cameraPositionsSpline.getTFromDistance(fromPlayer.distance(cameraPositionsSpline.getStartPoint()));
-	}
-	else
-		camT = cameraPositionsSpline.getTFromDistance(Math.sqrt(fromPlayer.distance(cameraPositionsSpline.getStartPoint())));
+	// let camT = 0;
+	// let fromPlayer = new Phaser.Math.Vector2(player.x,player.y);
+	// let firstCamBounds = new Phaser.Geom.Rectangle(cameraBounds[0].x,cameraBounds[0].y,cameraBounds[0].width,cameraBounds[0].height);
+	// let playerBounds = new Phaser.Geom.Rectangle(player.x-1,player.y-1,2,2);
+	// let intersectionWithCamBounds = Phaser.Geom.Rectangle.Intersection(firstCamBounds, playerBounds);
+	// if(intersectionWithCamBounds.width == 0 && intersectionWithCamBounds.height == 0)
+	// {
+	// 	camT = cameraPositionsSpline.getTFromDistance(fromPlayer.distance(cameraPositionsSpline.getStartPoint()));
+	// }
+	// else
+	// 	camT = cameraPositionsSpline.getTFromDistance(Math.sqrt(fromPlayer.distance(cameraPositionsSpline.getStartPoint())));
 
-	camT = 0;	
-	let camP = cameraPositionsSpline.getPoint(camT);
+	// camT = 0;	
+	// let camP = cameraPositionsSpline.getPoint(camT);
 	// this.cameras.main.pan(camP.x, camP.y, 100, 'Sine.easeInOut');
-	let camZ = Phaser.Math.Interpolation.Linear(cameraZoomValues, camT);
+	// let camZ = Phaser.Math.Interpolation.Linear(cameraZoomValues, camT);
 	// this.cameras.main.zoomTo(camZ, 100);
 	// this.cameras.main.zoomTo(5, 100);
 
-	scene.add.graphics().lineStyle(4, 0xffffff);
-	cameraPositionsSpline.draw(scene.add.graphics());
+	// scene.add.graphics().lineStyle(4, 0xffffff);
+	// cameraPositionsPath.draw(scene.add.graphics());
 
 	// algoritmo
+	// ponto = primeiro ponto
 	// obtem t da distancia do player p/ ponto
-	// se t >= 1/qtdDePontos 
-	// 		calcula vetor de dir do ponto atual pro proximo, ponto atual pro anterior, ponto atual pro player
-	// 		mede 
+	// calcula vetor de dir* do ponto atual pro proximo(a), ponto atual pro anterior(b)(se t >= 1/qtdDePontos), ponto atual pro player(c)
+	// mede angulo entre (c)e(a) e (c)e(b), o que for menor é a direcao para onde o player tende
+	// divide distancia do player p/ ponto atual pela distancia do ponto p/ ponto ao qual tende, obtem (+ ou -)tDelta
+	// t += tDelta
+	// cameraPositionsPathT = 0.5;
+	// let playerP = new Phaser.Math.Vector2(player.x,player.y);
+	// let currentPoint = cameraPositionsPath.getPoint(currentPointT);
+	// let currentToPlayer = currentPoint.subtract(playerP);
+	// let currentToPlayerDistance = currentToPlayer.length();
+	// currentToPlayer.normalize();
+	// let nextPoint = null;
+	// let currentToNext = null;
+	// let currentToNextDistance = Infinity;
+	// let angleToNext = Infinity;
+	// if(nextPointT <= 1.0)
+	// {
+	// 	nextPoint = cameraPositionsPath.getPoint(nextPointT);
+	// 	currentToNext = nextPoint.subtract(currentPoint);
+	// 	currentToNextDistance = currentToNext.length();
+	// 	currentToNext.normalize();
+	// 	angleToNext = Math.acos(currentToPlayer.dot(currentToNext));
+	// }
+	// let lastPoint = null;
+	// let currentToLast = null;
+	// let currentToLastDistance = Infinity;
+	// let angleToLast = Infinity;
+	// if(lastPointT >= 0.0)
+	// {
+	// 	lastPoint = cameraPositionsPath.getPoint(lastPointT);
+	// 	currentToLast = lastPoint.subtract(currentPoint);
+	// 	currentToLastDistance = currentToLast.length();
+	// 	currentToLast.normalize();
+	// 	angleToLast = Math.acos(currentToPlayer.dot(currentToLast));
+	// }
+
+	if(cameraBounds.length > 1)
+	{
+		let line = cameraPositionLines[cameraPositionLineIndex];
+		let a = line.getPointA();
+		let b = line.getPointB();
+		let nearestPoint = Phaser.Geom.Line.GetNearestPoint(line, {x:player.x, y:player.y});
+		let t = (new Phaser.Math.Vector2(nearestPoint.x,nearestPoint.y).subtract(a).length()) / b.subtract(a).length();
+		// scene.add.graphics().fillStyle('0xff0000',1.0);
+		// scene.add.graphics().fillPoint(nearestPoint.x, nearestPoint.y, 20);
+		// scene.add.graphics().strokeLineShape(line);
+		let zoomA = cameraZoomValues[cameraPositionLineIndex];
+		let zoomB = cameraZoomValues[cameraPositionLineIndex+1];
+		cameraZoom = zoomA + ((zoomB - zoomA) * t);
+		if(t <= 0.05)
+		{
+			t = 0.0;
+			if(cameraPositionLineIndex > 0)
+				--cameraPositionLineIndex;	
+		}
+		else if(t >= 1.0)
+		{
+			t = 1.0;
+			if(cameraPositionLineIndex < (cameraPositionLines.length-1))
+				++cameraPositionLineIndex;	
+		}
+		nearestPoint = Phaser.Geom.Line.GetPoint(line, t);
+		cameraPosition.set(nearestPoint.x,nearestPoint.y);
+
+	}
+	this.cameras.main.pan(cameraPosition.x, cameraPosition.y, delta, 'Linear');
+	this.cameras.main.zoomTo(cameraZoom, delta);
+
+
+	// let tDelta = 0;
+	// if((angleToNext < angleToLast) && (angleToNext > Math.PI/4))
+	// {
+	// 	tDelta = (currentToPlayerDistance/currentToNextDistance) * (1/cameraPositionPointsCount);
+	// 	// cameraPositionsPathT = nextPoint + tDelta;
+	// }
+	// else if((angleToLast < angleToNext) && (angleToLast > Math.PI/4))
+	// {
+	// 	tDelta = -(1.0/(currentToPlayerDistance/currentToLastDistance)) * (1/cameraPositionPointsCount);
+	// 	// cameraPositionsPathT = lastPointT + tDelta;
+	// }
+	// cameraPositionsPathT = currentPointT + tDelta;
+	// Phaser.Math.Clamp(cameraPositionsPathT, 0.0, 1.0);
+	// // Phaser.Math.Clamp(cameraPositionsPathT, lastPointT, nextPointT);
+
+	// // let bounds = cameraBounds[parseInt(Math.floor(cameraPositionsPathT*(cameraPositionPointsCount-1)))];
+	// // let boundsRect = new Phaser.Geom.Rectangle(bounds.x,bounds.y,bounds.width,bounds.height);
+	// // let playerRect = new Phaser.Geom.Rectangle(player.x-1,player.y-1,2,2);
+	// // let playerBoundsIntersection = Phaser.Geom.Rectangle.Intersection(boundsRect, playerRect);
+	// // if(playerBoundsIntersection.width == 0 && playerBoundsIntersection.height == 0)
+	// // {
+	// 	let camP = cameraPositionsPath.getPoint(cameraPositionsPathT);
+	// 	// this.cameras.main.pan(camP.x, camP.y, delta, 'Sine.easeInOut');
+	// 	let camZ = Phaser.Math.Interpolation.Linear(cameraZoomValues, cameraPositionsPathT);
+	// 	// this.cameras.main.zoomTo(camZ, delta);
+	// // // }
+
+	// let currentToPlayerTDistance = Math.abs(currentPointT - cameraPositionsPathT);
+	// let nextToPlayerTDistance = Math.abs(nextPointT - cameraPositionsPathT);
+	// let lastToPlayerTDistance = Math.abs(lastPointT - cameraPositionsPathT);
+	// let smallerTDistance = Math.min(currentToPlayerTDistance, nextToPlayerTDistance, lastToPlayerTDistance);
+	// if(smallerTDistance == nextToPlayerTDistance)
+	// {
+	// 	lastPointT = currentPointT;
+	// 	currentPointT = nextPointT;
+	// 	nextPointT = currentPointT+(1.0/cameraPositionPointsCount);
+	// }
+	// else if(smallerTDistance == lastToPlayerTDistance)
+	// {
+	// 	nextPointT = currentPointT;
+	// 	currentPointT = lastPointT;
+	// 	lastPointT = currentPointT-(1.0/cameraPositionPointsCount);
+	// }
+	// currentPointT = Math.floor(cameraPositionsPathT * (cameraPositionPointsCount)) * (1.0/cameraPositionPointsCount);
+	// nextPointT = currentPointT+(1.0/cameraPositionPointsCount);
+	// lastPointT = currentPointT-(1.0/cameraPositionPointsCount);
+	
+
+	// cameraPositionsPathT = Math.floor(cameraPositionsPathT * cameraPositionPointsCount) * (1.0/cameraPositionPointsCount);
+
+	fpsText.setText('FPS: ' + (1000/delta).toFixed(3));
+	// fpsText.setPosition(camP.x - 26, camP.y - 19);
+	// scene.add.graphics().lineStyle(5, 0xFF0000, 1.0);
+// 	scene.add.graphics().beginPath();
+// 	scene.add.graphics().moveTo(player.x, player.y);
+// 	scene.add.graphics().lineTo(pointToPlayer.x, pointToPlayer.y);
+// 	scene.add.graphics().strokePath();
 }
