@@ -647,36 +647,111 @@ function update (time, delta)
 
 	if(cameraBounds.length > 1)
 	{
+		let playerP = new Phaser.Math.Vector2(player.x,player.y);
 		let line = cameraPositionLines[cameraPositionLineIndex];
 		let a = line.getPointA();
 		let b = line.getPointB();
 		let nearestPoint = Phaser.Geom.Line.GetNearestPoint(line, {x:player.x, y:player.y});
 		let t = (new Phaser.Math.Vector2(nearestPoint.x,nearestPoint.y).subtract(a).length()) / b.subtract(a).length();
+		t = Phaser.Math.Clamp(t, 0.0, 1.0);
+
 		// scene.add.graphics().fillStyle('0xff0000',1.0);
 		// scene.add.graphics().fillPoint(nearestPoint.x, nearestPoint.y, 20);
 		// scene.add.graphics().strokeLineShape(line);
 		let zoomA = cameraZoomValues[cameraPositionLineIndex];
 		let zoomB = cameraZoomValues[cameraPositionLineIndex+1];
 		cameraZoom = zoomA + ((zoomB - zoomA) * t);
-		if(t <= 0.05)
-		{
-			t = 0.0;
-			if(cameraPositionLineIndex > 0)
-				--cameraPositionLineIndex;	
+	
+		let aBounds = cameraBounds[cameraPositionLineIndex];
+		let aBoundsRect = new Phaser.Geom.Rectangle(aBounds.x,aBounds.y,aBounds.width,aBounds.height);
+		let bBounds = cameraBounds[cameraPositionLineIndex+1];
+		let bBoundsRect = new Phaser.Geom.Rectangle(bBounds.x,bBounds.y,bBounds.width,bBounds.height);
+		let playerRect = new Phaser.Geom.Rectangle(player.x-1,player.y-1,2,2);
+		let playerABoundsIntersection = Phaser.Geom.Rectangle.Intersection(aBoundsRect, playerRect);
+		let playerBBoundsIntersection = Phaser.Geom.Rectangle.Intersection(bBoundsRect, playerRect);
+		if(playerABoundsIntersection.width != 0 || playerABoundsIntersection.height != 0)
+		{ // dentro do bounds no inicio da transicao
+			if(t <= 0.5) // idk about this
+			{ // pode estar tendendo ao anterior
+				let aCenter = new Phaser.Math.Vector2(aBounds.center.x, aBounds.center.y);
+				let bCenter = new Phaser.Math.Vector2(bBounds.center.x, bBounds.center.y);
+				if(cameraPositionLineIndex > 0)
+				{
+					let cBounds = cameraBounds[cameraPositionLineIndex-1];
+					let cCenter = new Phaser.Math.Vector2(cBounds.center.x, cBounds.center.y);
+					
+					let aToPlayer = playerP.subtract(aCenter);
+					let aToPlayerDist = aToPlayer.length();
+					aToPlayer.normalize();
+
+					let aToB = bCenter.subtract(aCenter);
+					let aToBDistance = aToB.length();
+					aToB.normalize();
+					let angleToB = Math.acos(aToPlayer.dot(aToB));
+
+					let aToC = cCenter.subtract(aCenter);
+					let aToCDistance = aToC.length();
+					aToC.normalize();
+					let angleToC = Math.acos(aToPlayer.dot(aToC));
+
+					if(angleToC < angleToB)
+					{
+						--cameraPositionLineIndex;
+					}
+				}
+			}
 		}
-		else if(t >= 1.0)
-		{
-			t = 1.0;
-			if(cameraPositionLineIndex < (cameraPositionLines.length-1))
-				++cameraPositionLineIndex;	
+		else if(playerBBoundsIntersection.width != 0 || playerBBoundsIntersection.height != 0)
+		{ // dentro do bounds do fim da transicao
+			if(t > 0.5)  // idk about this
+			{ // pode estar tendendo ao posterior
+				let aCenter = new Phaser.Math.Vector2(aBounds.center.x, aBounds.center.y);
+				let bCenter = new Phaser.Math.Vector2(bBounds.center.x, bBounds.center.y);
+				if(cameraPositionLineIndex < (cameraPositionLines.length-1))
+				{
+					let cBounds = cameraBounds[cameraPositionLineIndex+2];
+					let cCenter = new Phaser.Math.Vector2(cBounds.center.x, cBounds.center.y);
+					
+					let bToPlayer = playerP.subtract(bCenter);
+					let bToPlayerDist = bToPlayer.length();
+					bToPlayer.normalize();
+
+					let bToA = aCenter.subtract(bCenter);
+					let bToADistance = bToA.length();
+					bToA.normalize();
+					let angleToA = Math.acos(bToPlayer.dot(bToA));
+
+					let bToC = cCenter.subtract(bCenter);
+					let bToCDistance = bToC.length();
+					bToC.normalize();
+					let angleToC = Math.acos(bToPlayer.dot(bToC));
+
+					if(angleToC < angleToA)
+					{
+						++cameraPositionLineIndex;
+					}
+				}
+			}
 		}
+
+		// if(t <= 0.05)
+		// {
+		// 	t = 0.0;
+		// 	if(cameraPositionLineIndex > 0)
+		// 		--cameraPositionLineIndex;	
+		// }
+		// else if(t >= 1.0)
+		// {
+		// 	t = 1.0;
+		// 	if(cameraPositionLineIndex < (cameraPositionLines.length-1))
+		// 		++cameraPositionLineIndex;	
+		// }
 		nearestPoint = Phaser.Geom.Line.GetPoint(line, t);
 		cameraPosition.set(nearestPoint.x,nearestPoint.y);
 
 	}
 	this.cameras.main.pan(cameraPosition.x, cameraPosition.y, delta, 'Linear');
 	this.cameras.main.zoomTo(cameraZoom, delta);
-
 
 	// let tDelta = 0;
 	// if((angleToNext < angleToLast) && (angleToNext > Math.PI/4))
