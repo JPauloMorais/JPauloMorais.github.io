@@ -248,7 +248,7 @@ function create ()
 	}
 	else
 	{
-		cameraPosition = new Phaser.Math.Vector2(p.x,p.y);
+		cameraPosition = new Phaser.Math.Vector2(0,0);
 		cameraZoom = 1.0;
 	}
 
@@ -469,8 +469,10 @@ function update (time, delta)
 		cameraPosition.set(nearestPoint.x,nearestPoint.y);
 		cameraZoom = zoomA + ((zoomB - zoomA) * t);
 	}
-	this.cameras.main.pan(cameraPosition.x, cameraPosition.y, delta, 'Linear');
-	this.cameras.main.zoomTo(cameraZoom, delta);
+	this.cameras.main.centerOn(cameraPosition.x, cameraPosition.y);
+	this.cameras.main.setZoom(cameraZoom);
+	// this.cameras.main.pan(cameraPosition.x, cameraPosition.y, delta, 'Linear');
+	// this.cameras.main.zoomTo(cameraZoom, delta);
 
 	
 	fpsText.setText('FPS: ' + (1000/delta).toFixed(3));
