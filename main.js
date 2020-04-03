@@ -181,7 +181,7 @@ function create ()
 			else if (object.name == 'germ_spawn')
 			{
 				let germ = germParticles.createEmitter({
-											        frame: { frames: [ 'germ 0.aseprite'], cycle: true },
+											        frame: { frames: ['germ 0.aseprite','germ 1.aseprite','germ 2.aseprite'], cycle: false },
 											        scale: 1,
 											        alpha: 1,
 											        // blendMode: 'ADD',
