@@ -44,6 +44,12 @@ var cameraZoomValues;
 var cameraPositionLines;
 var cameraPosition;
 var cameraZoom;
+var graphics;
+
+var groundDepth = 0;
+var debugDepth = 0.5;
+var playerDepth = 1;
+var wallsDepth = 2;
 
 function preload ()
 {
@@ -136,16 +142,19 @@ function setupLayerColliders(tileset, map, layer)
 function create ()
 {
 	scene = this;
+	graphics = this.add.graphics({ lineStyle: { width: 4, color: 0x5555ff, depth:5.0} });
 
 	this.matter.set60Hz();
+
+	// sceneGroup = this.make.group({});
 
 	// criando mapa
 	map = this.make.tilemap({ key: 'map' });
     var tileset = map.addTilesetImage('tileset_inside', 'tileset');
     let mapX = 0;//(windowWidth/2) - (map.widthInPixels/2);
     let mapY = 0;//(windowHeight/2) - (map.heightInPixels/2);
-    let ground = map.createDynamicLayer('ground', tileset, mapX, mapY).setDepth(0).setVisible(true);
-    let walls = map.createDynamicLayer('walls', tileset, mapX, mapY).setDepth(2).setVisible(true);
+    let ground = map.createDynamicLayer('ground', tileset, mapX, mapY).setDepth(groundDepth).setVisible(true);
+    let walls = map.createDynamicLayer('walls', tileset, mapX, mapY).setDepth(wallsDepth).setVisible(true);
     this.matter.world.setBounds(map.widthInPixels, map.heightInPixels);
 	setupLayerColliders(tileset, map, ground);
 	setupLayerColliders(tileset, map, walls);
@@ -160,7 +169,7 @@ function create ()
     player.setAngle(0);
     player.setFrictionAir(0.05);
     player.setMass(10);
-    player.setDepth(1);
+    player.setDepth(playerDepth);
     lastDirection = new Phaser.Math.Vector2(0,0); 
 
 	let germParticles = this.add.particles('germ');
@@ -186,8 +195,9 @@ function create ()
 											        alpha: 1,
 											        // blendMode: 'ADD',
 											        // follow: player,
-													speed: { min: -5, max: +5 },
-								        			maxParticles: 1000,
+													speedX: { min: -1.5, max: +1.5 },
+													speedY: { min: -0.5, max: +2.5 },
+								        			maxParticles: 10000,
 								        			lifespan: 2000,
 								        			bounds: {x:0,y:0, width:map.widthInPixels,height:map.heightInPixels},
 											        // emitZone: { type: 'edge', source: path, quantity: 1000, yoyo: false }
@@ -426,7 +436,7 @@ function update (time, delta)
 				t = 0.0;
 			}
 
-			t *= 0.95;
+			// t *= 0.95;
 		}
 		else if(playerBBoundsIntersection.width != 0 || playerBBoundsIntersection.height != 0)
 		{ // dentro do bounds do fim da transicao
@@ -457,18 +467,28 @@ function update (time, delta)
 					++cameraPositionLineIndex;
 				}
 			}
-			else if(angleToA >= (Math.PI/4))
+			else if(angleToA>=(Math.PI/4))
 			{ // evitar wrapping ?
 				t = 1.0;
 			}
 
-			t *= 0.95;
+			// t *= 0.95;
 		}
 
 		nearestPoint = Phaser.Geom.Line.GetPoint(line, t);
 		cameraPosition.set(nearestPoint.x,nearestPoint.y);
 		cameraZoom = zoomA + ((zoomB - zoomA) * t);
+		
+		graphics.clear();
+		// let depth = graphics.depth;
+		graphics.setDepth(debugDepth);
+		graphics.lineStyle(2, 0x5555FF, 1.0);
+	    graphics.strokeLineShape(line);
+		graphics.fillStyle(0xFF5555, 1.0);
+		graphics.fillPointShape({x:cameraPosition.x,y:cameraPosition.y}, 2);
+		// graphics.setDepth(depth);
 	}
+
 	this.cameras.main.centerOn(cameraPosition.x, cameraPosition.y);
 	this.cameras.main.setZoom(cameraZoom);
 	// this.cameras.main.pan(cameraPosition.x, cameraPosition.y, delta, 'Linear');
@@ -477,4 +497,6 @@ function update (time, delta)
 	
 	fpsText.setText('FPS: ' + (1000/delta).toFixed(3));
 	// fpsText.setPosition(cameraPosition.x - 26, cameraPosition.y - 19);
+	// 
+	scene.children.depthSort();
 }
