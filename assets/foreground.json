@@ -61,7 +61,7 @@
     "trimmed": false,
     "spriteSourceSize": { "x": 0, "y": 0, "w": 90, "h": 160 },
     "sourceSize": { "w": 90, "h": 160 },
-    "duration": 500
+    "duration": 100
    },
    "foreground 8.aseprite": {
     "frame": { "x": 270, "y": 160, "w": 90, "h": 160 },
@@ -150,19 +150,59 @@
     "spriteSourceSize": { "x": 0, "y": 0, "w": 90, "h": 160 },
     "sourceSize": { "w": 90, "h": 160 },
     "duration": 100
+   },
+   "foreground 19.aseprite": {
+    "frame": { "x": 360, "y": 480, "w": 90, "h": 160 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 90, "h": 160 },
+    "sourceSize": { "w": 90, "h": 160 },
+    "duration": 100
+   },
+   "foreground 20.aseprite": {
+    "frame": { "x": 0, "y": 640, "w": 90, "h": 160 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 90, "h": 160 },
+    "sourceSize": { "w": 90, "h": 160 },
+    "duration": 100
+   },
+   "foreground 21.aseprite": {
+    "frame": { "x": 90, "y": 640, "w": 90, "h": 160 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 90, "h": 160 },
+    "sourceSize": { "w": 90, "h": 160 },
+    "duration": 100
+   },
+   "foreground 22.aseprite": {
+    "frame": { "x": 180, "y": 640, "w": 90, "h": 160 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 90, "h": 160 },
+    "sourceSize": { "w": 90, "h": 160 },
+    "duration": 100
+   },
+   "foreground 23.aseprite": {
+    "frame": { "x": 270, "y": 640, "w": 90, "h": 160 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 90, "h": 160 },
+    "sourceSize": { "w": 90, "h": 160 },
+    "duration": 100
    }
  },
  "meta": {
   "app": "http://www.aseprite.org/",
   "version": "1.2.9-x64",
-  "image": "C:\\Users\\Joao\\Work\\jpgma.github.io\\assets\\foreground.png",
+  "image": "C:\\Users\\Joao\\Work\\jpaulomorais.github.io\\assets\\foreground.png",
   "format": "RGBA8888",
   "size": { "w": 512, "h": 1024 },
   "scale": "1",
   "frameTags": [
-   { "name": "Push-Up Start", "from": 0, "to": 1, "direction": "forward" },
-   { "name": "Push-Up", "from": 2, "to": 7, "direction": "pingpong" },
-   { "name": "Push-Up End", "from": 8, "to": 18, "direction": "forward" }
+   { "name": "Push-Up Full", "from": 0, "to": 12, "direction": "forward" },
+   { "name": "Push-Up", "from": 2, "to": 12, "direction": "forward" },
+   { "name": "Push-Up End", "from": 13, "to": 23, "direction": "forward" }
   ],
   "layers": [
    { "name": "Ground", "opacity": 255, "blendMode": "normal" },

@@ -46,6 +46,9 @@ var animation;
 var background_text;
 var state = 0;
 
+var currentStatement;
+var statements = ['aperta?\ntoca?\nidk...', '01', '02'];
+
 function init ()
 {
     //  Inject our CSS
@@ -103,18 +106,22 @@ function advance()
 // scene.add.text(n++, 32, 'Push', { fontFamily: 'Comic Sans MS', fontSize: 16, color: '#ff0000' });
 	if(foreground.anims.isPlaying == false)
 	{
-		if(state == 0)
-		{
-			foreground.anims.play('Push-Up Full', false);
-			// foreground.anims.chain('Push-Up');
-	 		foreground.anims.setRepeat(0);
-		}
-		else
-		{
-	 		foreground.anims.play('Push-Up', false);
-	 		foreground.anims.setRepeat(0);
-		}
+		// if(state == 0)
+		// {
+		// 	foreground.anims.play('Push-Up Full', false);
+		// 	// foreground.anims.chain('Push-Up');
+	 // 		foreground.anims.setRepeat(0);
+		// }
+		// else
+		// {
+ 		foreground.anims.play('Push-Up', false);
+ 		foreground.anims.setRepeat(0);
+		// }
+
 		++state;
+
+		currentStatement.setText(statements[state]);
+
 	}
 }
 
@@ -124,11 +131,13 @@ function create ()
 	graphics = this.add.graphics({ lineStyle: { width: 4, color: 0x5555ff, depth:5.0} });
 
 	foreground = spriteFromAsepriteAtlas(this.textures.get('foreground'));
-	foreground.anims.play('Push-Up Start', true);
+	foreground.anims.play('Push-Up', true);
 	foreground.anims.stopOnFrame(0);
 	foreground.anims.setRepeat(0);
 	foreground.setPosition(windowWidth/2,windowHeight/2);
 	foreground.setScale(assetRatio);
+
+	currentStatement = scene.add.text(16, 16, statements[0], { font: 16*assetRatio +'px Comic Sans MS', fill: '#00ff00' }).setScrollFactor(0);
 
 	this.cameras.main.setBackgroundColor(0x5fcde4);
 
@@ -156,5 +165,6 @@ function create ()
 
 function update (time, delta)
 {
-	graphics.clear();
+	// graphics.clear();
+	currentStatement.setAlpha(foreground.anims.getProgress());
 }
