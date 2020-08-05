@@ -3,17 +3,19 @@ var innerWidth = window.innerWidth * window.devicePixelRatio;
 var innerHeight = window.innerHeight * window.devicePixelRatio;
 // var portrait = (innerHeight > innerWidth ? true : false);
 
-var assetWidth = 90;
-var assetHeight = 160;
+var assetWidth = 90 * 2;
+var assetHeight = 160 * 2;
 
-var windowHeight = innerHeight;
-var assetRatio = innerHeight / assetHeight;
-var windowWidth = windowWidth = assetWidth * assetRatio;
+// var windowHeight = innerHeight;
+var assetRatio = 2.0;
+// var windowWidth = windowWidth = assetWidth * assetRatio;
+var windowWidth = assetWidth;
+var windowHeight = assetHeight;
 
 var config = {
     width: windowWidth,
     height: windowHeight,
-    mode: Phaser.Scale.RESIZE,
+    mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     // antialiasGL: false,
     renderer: {type: Phaser.WEBGL, mipmapFilter: 'NEAREST' },
