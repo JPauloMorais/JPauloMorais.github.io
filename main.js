@@ -33,7 +33,6 @@ var config = {
         }
     },
     scene: {
-    	init: init,
         preload: preload,
         create: create,
         update: update
@@ -47,24 +46,16 @@ var graphics;
 var animation;
 var background_text;
 var state = 0;
+var song;
 
 var currentStatement;
-var statements = ['aperta?\ntoca?\nidk...', '01', '02'];
-
-function init ()
-{
-    //  Inject our CSS
-    var element = document.createElement('style');
-    document.head.appendChild(element);
-    var sheet = element.sheet;
-    var styles = '@font-face { font-family: "Minecraftia"; src: url("assets/Minecraftia-Regular.ttf") format("truetype"); }\n';
-    sheet.insertRule(styles, 0);
-}
+var statements = ['aperta?\ntoca?\nidk...', 'mais\num\nano', 'nao\ndos\nmelhores', 'mas\nainda\ncontinua',
+				  'empurrando,\npuxando,\ntentando...', 'orgulhoso\ndo\nprogresso', 'parabens\npelos seus\n23'];
 
 function preload ()
 {
-	this.load.script('webfont', 'https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js');	
     this.load.atlas('foreground', './assets/foreground.png', './assets/foreground.json');
+    this.load.audio('happybday', ['./assets/Chiptune Happy Birthday.mp3']);
 }
 
 function spriteFromAsepriteAtlas(atlasTexture)
@@ -108,21 +99,23 @@ function advance()
 // scene.add.text(n++, 32, 'Push', { fontFamily: 'Comic Sans MS', fontSize: 16, color: '#ff0000' });
 	if(foreground.anims.isPlaying == false)
 	{
-		// if(state == 0)
-		// {
-		// 	foreground.anims.play('Push-Up Full', false);
-		// 	// foreground.anims.chain('Push-Up');
-	 // 		foreground.anims.setRepeat(0);
-		// }
-		// else
-		// {
- 		foreground.anims.play('Push-Up', false);
- 		foreground.anims.setRepeat(0);
-		// }
+		if(state == 0)
+		{
+			song.play();	
+		}
 
 		++state;
-
-		currentStatement.setText(statements[state]);
+ 		foreground.anims.play('Push-Up', false);
+ 		foreground.anims.setRepeat(0);
+		
+		if(state < statements.length)
+		{
+			currentStatement.setText(statements[state]);
+		}
+		else
+		{
+			currentStatement.setText('que\nvenha\n' + (23+(state - statements.length + 1)));
+		}
 
 	}
 }
@@ -139,21 +132,11 @@ function create ()
 	foreground.setPosition(windowWidth/2,windowHeight/2);
 	foreground.setScale(assetRatio);
 
-	currentStatement = scene.add.text(16, 16, statements[0], { font: 16*assetRatio +'px Comic Sans MS', fill: '#00ff00' }).setScrollFactor(0);
+	currentStatement = scene.add.text(16, 16, statements[0], { font: 16*assetRatio +'px Comic Sans MS', fill: '#ffffff' }).setScrollFactor(0);
 
 	this.cameras.main.setBackgroundColor(0x5fcde4);
 
-	// var add = this.add;
-	// WebFont.load({
- //        custom: {
- //            families: ['Minecraftia']
- //        },
- //        active: function ()
- //        {
- //   //          background_text = add.text(32, 32, 'Push', { fontFamily: 'Minecraftia', fontSize: 16, color: '#ff0000' }).setShadow(2, 2, "#333333", 2, false, true);
-	// 		// background_text.setFontSize(8);
- //        }
- //    });
+	song = this.sound.add('happybday');
 
  	scene.input.keyboard.on('keyup', function(event) 
  	{
@@ -169,4 +152,8 @@ function update (time, delta)
 {
 	// graphics.clear();
 	currentStatement.setAlpha(foreground.anims.getProgress());
+	if(state >= statements.length)
+	{
+		advance();
+	}
 }
