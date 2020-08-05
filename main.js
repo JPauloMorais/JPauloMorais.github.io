@@ -44,6 +44,7 @@ var scene;
 var graphics;
 var animation;
 var background_text;
+var state = 0;
 
 function init ()
 {
@@ -97,13 +98,35 @@ function spriteFromAsepriteAtlas(atlasTexture)
 	return sprite;
 }
 
+function advance()
+{
+// scene.add.text(n++, 32, 'Push', { fontFamily: 'Comic Sans MS', fontSize: 16, color: '#ff0000' });
+	if(foreground.anims.isPlaying == false)
+	{
+		if(state == 0)
+		{
+			foreground.anims.play('Push-Up Full', false);
+			// foreground.anims.chain('Push-Up');
+	 		foreground.anims.setRepeat(0);
+		}
+		else
+		{
+	 		foreground.anims.play('Push-Up', false);
+	 		foreground.anims.setRepeat(0);
+		}
+		++state;
+	}
+}
+
 function create ()
 {
 	scene = this;
 	graphics = this.add.graphics({ lineStyle: { width: 4, color: 0x5555ff, depth:5.0} });
 
 	foreground = spriteFromAsepriteAtlas(this.textures.get('foreground'));
-	// foreground.anims.play('Push-Up', true);
+	foreground.anims.play('Push-Up Start', true);
+	foreground.anims.stopOnFrame(0);
+	foreground.anims.setRepeat(0);
 	foreground.setPosition(windowWidth/2,windowHeight/2);
 	foreground.setScale(assetRatio);
 
@@ -121,13 +144,14 @@ function create ()
  //        }
  //    });
 
-
- 	var n = 1;
  	scene.input.keyboard.on('keyup', function(event) 
  	{
- 		// scene.add.text(n++, 32, 'Push', { fontFamily: 'Comic Sans MS', fontSize: 16, color: '#ff0000' });
- 		foreground.anims.play('Push-Up', false);
+ 		advance();
  	});
+ 	scene.input.on('pointerup', function(pointer)
+ 	{
+ 		advance();
+	});
 }
 
 function update (time, delta)
